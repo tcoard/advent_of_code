@@ -4,20 +4,19 @@ import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
-import simplifile.{read}
+import simplifile
+import tote/bag
 
 fn format_list(input: List(String)) {
   input
-  |> list.map(int.base_parse(_, 10))
-  |> result.values
+  |> list.filter_map(int.parse)
 }
 
 fn sep_lists(input: String) -> #(List(Int), List(Int)) {
   let #(a, b) =
     input
     |> string.split("\n")
-    |> list.map(string.split_once(_, on: "   "))
-    |> result.values
+    |> list.filter_map(string.split_once(_, on: "   "))
     |> list.unzip
   #(format_list(a), format_list(b))
 }
@@ -30,21 +29,20 @@ fn compare_lists(a: List(Int), b: List(Int)) -> Int {
 }
 
 fn similarity_score(a: List(Int), b: List(Int)) {
+  let b = bag.from_list(b)
   list.fold(over: a, from: 0, with: fn(last, curr) {
-    last + curr * list.count(b, fn(i) { i == curr })
+    last + curr * bag.copies(b, curr)
   })
 }
 
 pub fn main() {
   let filepath = "../../data/day1.txt"
-  let assert Ok(input) = read(from: filepath)
+  let assert Ok(input) = simplifile.read(from: filepath)
   let #(a, b) = sep_lists(input)
 
   // day 1
-  let output = compare_lists(a, b)
-  io.debug(output)
+  compare_lists(a, b) |> io.debug
 
-  // day 2
-  let output = similarity_score(a, b)
-  io.debug(output)
+  // part 2
+  similarity_score(a, b) |> io.debug
 }
