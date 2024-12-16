@@ -8,7 +8,7 @@ import gleam/result
 import gleam/string
 import simplifile
 
-const max_iterations = 10000
+const max_iterations = 10_000
 
 pub type Coord =
   #(Int, Int)
@@ -109,20 +109,27 @@ fn infinite_check(
   grid: Grid,
   pos: Coord,
   dir: Direction,
-  iteration: Int,
+  prev_moves: List(#(Coord, Direction)),
 ) -> Bool {
-  use <- bool.guard(when: iteration == max_iterations, return: True)
+  // use <- bool.guard(when: iteration == max_iterations, return: True)
   let grid = dict.insert(grid, pos, "X")
   let new_pos = calc_next_pos(pos, dir)
+  use <- bool.guard(
+    when: {
+      case list.find(prev_moves, fn(x) { x == #(new_pos, dir) }) {
+        Ok(_) -> True
+        Error(_) -> False
+      }
+    },
+    return: True,
+  )
   case dict.get(grid, new_pos) {
     Ok("#") ->
-      infinite_check(
-        grid,
-        pos,
-        turn_90(dir),
-        iteration+1,
-      )
-    Ok(_) -> infinite_check(grid, new_pos, dir, iteration+1)
+      infinite_check(grid, pos, turn_90(dir), [
+        #(pos, turn_90(dir)),
+        ..prev_moves
+      ])
+    Ok(_) -> infinite_check(grid, new_pos, dir, [#(new_pos, dir), ..prev_moves])
     Error(_) -> False
   }
 }
@@ -140,7 +147,7 @@ fn part2(grid: Grid) {
       False -> acc
     }
   })
-  |> list.map(infinite_check(_, pos, dir, 0))
+  |> list.map(infinite_check(_, pos, dir, []))
   |> list.filter(fn(x) { x })
   |> list.length
 }
