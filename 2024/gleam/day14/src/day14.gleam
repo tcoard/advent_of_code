@@ -118,10 +118,6 @@ fn part1(robots: List(Robot)) {
   * finished_counts.q2
   * finished_counts.q3
   * finished_counts.q4
-  // |> robots_to_grid
-  // |> io.print
-  // io.println("")
-  // io.println("")
 }
 
 fn part2(robots: List(Robot)) {
@@ -131,9 +127,6 @@ fn part2(robots: List(Robot)) {
       robots
       |> list.map(move_robot)
 
-    let finished_counts =
-      moved_robots
-      |> quadrant
     let filepath = "./out/" <> int.to_string(i) <> ".pgm"
 
     let assert Ok(_) =
@@ -155,18 +148,12 @@ fn part2(robots: List(Robot)) {
 
     moved_robots
   })
-  // |> robots_to_grid
-  // |> io.print
-  // io.println("")
-  // io.println("")
 }
 
 pub fn main() {
   let filepath = "../../data/day14_test.txt"
   let assert Ok(input) = simplifile.read(from: filepath)
   let robots = parse_robots(input)
-  // robots |> io.debug
-  part1(robots)
+  part1(robots) |> io.debug
   part2(robots)
-  //|> io.debug
 }
