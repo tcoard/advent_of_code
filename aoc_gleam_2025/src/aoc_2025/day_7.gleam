@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/dict
 import gleam/set.{type Set}
 import gleam/string
 
@@ -68,10 +69,11 @@ pub fn to_grid_2(input: String) {
   let lines = input |> string.split("\n")
   {
     use line <- list.map(lines)
-    use acc, char, x <- list.index_fold(string.to_graphemes(line), [])
-    case char == "." {
-      True -> acc
-      False -> [x, ..acc]
+    use acc, char, x <- list.index_fold(string.to_graphemes(line), dict.new())
+    case char {
+      "." -> dict.insert(acc, x, 0)
+      "S" -> dict.insert(acc, x, 1)
+      _ -> acc
     }
   }
 }
@@ -80,8 +82,9 @@ pub fn pt_2(input: String) {
   // #(pos, num of times it was gotten to)
   // at the end do multiplacation
   let parsed_lines = to_grid_2(input)
-  let assert [start, ..rest] = parsed_lines
-  let assert Ok(start) = list.first(start)
-  run_beam_2(start, rest)
-  |> echo
+  parsed_lines
+  // let assert [start, ..rest] = parsed_lines
+  // let assert Ok(start) = list.first(start)
+  // run_beam_2(start, rest)
+  // |> echo
 }
