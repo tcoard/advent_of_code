@@ -1,5 +1,6 @@
+import gleam/dict.{type Dict}
+import gleam/int
 import gleam/list
-import gleam/dict
 import gleam/set.{type Set}
 import gleam/string
 
@@ -9,7 +10,6 @@ pub fn pt_1(input: String) {
   let assert [start, ..rest] = parsed_lines
   // let assert Ok(start) = list.first(start)
   run_beam(start, rest, 0)
-  |> echo
 }
 
 pub fn to_grid(input: String) {
@@ -26,14 +26,15 @@ pub fn to_grid(input: String) {
 
 pub fn splits_to_next(splits: List(Int), splitted: Set(Int)) {
   case splits {
-    [x, ..rest] -> splits_to_next(rest, set.union(splitted, set.from_list([x-1, x+1])))
+    [x, ..rest] ->
+      splits_to_next(rest, set.union(splitted, set.from_list([x - 1, x + 1])))
     [] -> splitted
   }
 }
 
 pub fn run_beam(xs: Set(Int), grid: List(Set(Int)), counter: Int) {
   case grid {
-    [next, ..rest] ->{
+    [next, ..rest] -> {
       let splits = set.intersection(xs, next)
       let counter = counter + set.size(splits)
       let no_split = set.difference(xs, next)
@@ -45,23 +46,37 @@ pub fn run_beam(xs: Set(Int), grid: List(Set(Int)), counter: Int) {
   }
 }
 
-
-pub fn splits_to_next_2(splits: List(Int), splitted: Set(Int)) {
-  case splits {
-    [x, ..rest] -> splits_to_next(rest, set.union(splitted, set.from_list([x-1, x+1])))
-    [] -> splitted
-  }
+pub fn on(
+  outer_fn: fn(mid, mid) -> out,
+  inner_fn: fn(in) -> mid,
+  a: in,
+  b: in,
+) -> out {
+  outer_fn(inner_fn(a), inner_fn(b))
 }
 
-pub fn run_beam_2(x: Int, grid: List(List(Int))) {
+pub fn run_beam_2(xs: Dict(Int, Int), grid: List(Dict(Int, Int))) {
   case grid {
-    [next, ..rest] ->{
-      case list.contains(next, x) {
-        True -> run_beam_2(x - 1, rest) + run_beam_2(x + 1, rest)
-        False -> run_beam_2(x, rest)
-      }
+    [next, ..rest] -> {
+      // do I need to limit bounds to 0, max?
+      let get_keys_as_set = fn(x) { set.from_list(dict.keys(x)) }
+      on(set.intersection, get_keys_as_set, xs, next)
+      |> set.fold(xs, fn(acc, split) {
+        let assert Ok(prev_val) = dict.get(acc, split)
+        dict.from_list([
+          #(split + 1, prev_val),
+          #(split - 1, prev_val),
+        ])
+        |> dict.combine(acc, int.add)
+        |> dict.drop([split])
+      })
+      |> run_beam_2(rest)
     }
-    [] -> 1
+    [] -> {
+      xs
+      |> dict.values
+      |> int.sum
+    }
   }
 }
 
@@ -71,7 +86,7 @@ pub fn to_grid_2(input: String) {
     use line <- list.map(lines)
     use acc, char, x <- list.index_fold(string.to_graphemes(line), dict.new())
     case char {
-      "." -> dict.insert(acc, x, 0)
+      "^" -> dict.insert(acc, x, 0)
       "S" -> dict.insert(acc, x, 1)
       _ -> acc
     }
@@ -79,12 +94,8 @@ pub fn to_grid_2(input: String) {
 }
 
 pub fn pt_2(input: String) {
-  // #(pos, num of times it was gotten to)
-  // at the end do multiplacation
   let parsed_lines = to_grid_2(input)
-  parsed_lines
-  // let assert [start, ..rest] = parsed_lines
-  // let assert Ok(start) = list.first(start)
-  // run_beam_2(start, rest)
-  // |> echo
+
+  let assert [start, ..rest] = parsed_lines
+  run_beam_2(start, rest)
 }

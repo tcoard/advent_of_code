@@ -55,12 +55,12 @@ pub fn parse_to_int(line: String) -> List(Int) {
 // add to list if 12 - length(list) == remaining -> max
 pub fn pt_2(input: String) {
   // let assert Ok(values) =
-    input
-    |> string.split("\n")
-    |> list.map(parse_to_int)
-    |> list.map(fn(battery_bank) { battery_max_2_outer(battery_bank, 12, 0) })
-    |> int.sum
-    // |> list.try_map(int.parse)
+  input
+  |> string.split("\n")
+  |> list.map(parse_to_int)
+  |> list.map(fn(battery_bank) { battery_max_2_outer(battery_bank, 12, 0) })
+  |> int.sum
+  // |> list.try_map(int.parse)
   // int.sum(values)
 }
 
@@ -74,7 +74,11 @@ pub fn battery_max_2_outer(
       let max = battery_max_2(battery_bank, size, MaxState(0, [0]))
       // let prev_max = prev_max <> int.to_string(max.val)
       let assert Ok(scale) = int.power(10, int.to_float(size))
-      battery_max_2_outer(max.remaining_batteries, size - 1, prev_max + max.val * float.truncate(scale))
+      battery_max_2_outer(
+        max.remaining_batteries,
+        size - 1,
+        prev_max + max.val * float.truncate(scale),
+      )
     }
     False -> prev_max
   }
@@ -85,7 +89,7 @@ pub fn battery_max_2(
   size: Int,
   max: MaxState,
 ) -> MaxState {
-  use <- bool.guard(when: size-1 == list.length(battery_bank), return: max)
+  use <- bool.guard(when: size - 1 == list.length(battery_bank), return: max)
   case battery_bank {
     [x, ..rest] ->
       case x > max.val {
