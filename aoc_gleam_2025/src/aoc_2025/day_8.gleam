@@ -1,9 +1,9 @@
-import gleam/dict
 import gleam/bool
-import gleam/set.{type Set}
+import gleam/dict
 import gleam/float
 import gleam/int
-import gleam/list
+import gleam/list.{type ContinueOrStop, Continue, Stop}
+import gleam/set.{type Set}
 import gleam/string
 
 pub type Coord {
@@ -23,42 +23,101 @@ pub fn parse(input: String) {
   })
 }
 
-pub fn distance(p: Coord, q: Coord) -> Float{
-  let assert Ok(d) =
-    [p.x -. q.z, p.y -. q.y, p.z -. q.z]
-    |> list.filter_map(float.power(_, 2.0))
-    |> float.sum
-    |> float.square_root
-  d
+pub fn distance(p: Coord, q: Coord) -> Float {
+  [p.x -. q.x, p.y -. q.y, p.z -. q.z]
+  |> list.filter_map(float.power(_, 2.0))
+  |> float.sum
+  // isn't needed
+  // |> float.square_root
 }
 
 // node coord, connection: set(coord)
 
-pub fn idk(p: Coord, q: Coord, junctions: List(Set(Coord)), i: Int){
-  let new_junct = set.from_list([p, q])
-  use <- bool.guard(when: i == 10, return: junctions)
-  junctions
-  |> list.map(fn(junc) {
-    case set.contains(junc, p) || set.conatains(junc, q) {
-
-    }
-  })
+pub fn merge_circuits(
+  p: Coord,
+  q: Coord,
+  circuits: List(Set(Coord)),
+) -> List(Set(Coord)) {
+  let new_circ = set.from_list([p, q])
+  case list.partition(circuits, fn(circ) { !set.is_disjoint(circ, new_circ) }) {
+    #([one], rest) -> [set.union(one, new_circ), ..rest]
+    #([one, two], rest) -> [set.union(one, two) |> set.union(new_circ), ..rest]
+    #([], rest) -> [new_circ, ..rest]
+    _ -> panic
+  }
 }
 
 pub fn pt_1(coords: List(Coord)) {
-  coords
-  |> list.combination_pairs
-  |> list.map(fn(p_q) {
-    let #(p, q) = p_q
-    #(p_q, distance(p, q))
+  let pairs =
+    coords
+    |> list.combination_pairs
+    |> list.map(fn(p_q) {
+      let #(p, q) = p_q
+      #(p_q, distance(p, q))
+    })
+    |> list.sort(fn(coord_pair1, coord_pair2) {
+      let #(_coords1, d1) = coord_pair1
+      let #(_coords2, d2) = coord_pair2
+      float.compare(d1, d2)
+    })
+    |> list.take(1000)
+
+  list.fold(pairs, [], fn(acc, coord_pair) {
+    let #(#(p, q), _d) = coord_pair
+    merge_circuits(p, q, acc)
   })
-  |> list.sort(fn(coord_pair1, coord_pair2) {
-    let #(_coords1, d1) = coord_pair1
-    let #(_coords2, d2) = coord_pair2
-    float.compare(d1, d2)
-  })
+  |> list.map(set.size)
+  |> list.sort(int.compare)
+  |> list.reverse
+  |> list.take(3)
+  |> list.fold(1, int.multiply)
+}
+
+pub fn merge_circuits_2(
+  p: Coord,
+  q: Coord,
+  circuits: List(Set(Coord)),
+) -> List(Set(Coord)) {
+  // need to save first input that didnt change the list
+  let new_circ = set.from_list([p, q])
+  case list.partition(circuits, fn(circ) { !set.is_disjoint(circ, new_circ) }) {
+    // #([rest], []) -> {
+    //   [rest]
+    // }
+    #([one], rest) -> [set.union(one, new_circ), ..rest]
+    #([one, two], rest) -> [set.union(one, two) |> set.union(new_circ), ..rest]
+    #([], rest) -> [new_circ, ..rest]
+    _ -> panic
+  }
 }
 
 pub fn pt_2(coords: List(Coord)) {
-  todo as "part 2 not implemented"
+  let pairs =
+    coords
+    |> list.combination_pairs
+    |> list.map(fn(p_q) {
+      let #(p, q) = p_q
+      #(p_q, distance(p, q))
+    })
+    |> list.sort(fn(coord_pair1, coord_pair2) {
+      let #(_coords1, d1) = coord_pair1
+      let #(_coords2, d2) = coord_pair2
+      float.compare(d1, d2)
+    })
+  // |> list.take(1000)
+
+  list.fold(pairs, [], fn(acc, coord_pair) {
+    let #(#(p, q), _d) = coord_pair
+    let new = merge_circuits_2(p, q, acc)
+    case new == acc {
+      False -> echo coord_pair
+      True -> echo #(#(Coord(0.0, 0.0, 0.0), Coord(0.0, 0.0, 0.0)), 0.0)
+    }
+    new
+  })
+  |> list.map(set.size)
+  |> list.sort(int.compare)
+  |> list.reverse
+  |> list.take(3)
+  |> list.fold(1, int.multiply)
 }
