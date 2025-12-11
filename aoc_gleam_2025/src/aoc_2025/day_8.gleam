@@ -1,8 +1,6 @@
-import gleam/bool
-import gleam/dict
 import gleam/float
 import gleam/int
-import gleam/list.{type ContinueOrStop, Continue, Stop}
+import gleam/list
 import gleam/set.{type Set}
 import gleam/string
 
@@ -30,8 +28,6 @@ pub fn distance(p: Coord, q: Coord) -> Float {
   // isn't needed
   // |> float.square_root
 }
-
-// node coord, connection: set(coord)
 
 pub fn merge_circuits(
   p: Coord,
@@ -73,26 +69,26 @@ pub fn pt_1(coords: List(Coord)) {
   |> list.fold(1, int.multiply)
 }
 
-pub fn merge_circuits_2(
-  p: Coord,
-  q: Coord,
-  circuits: List(Set(Coord)),
-) -> List(Set(Coord)) {
-  // need to save first input that didnt change the list
-  let new_circ = set.from_list([p, q])
-  case list.partition(circuits, fn(circ) { !set.is_disjoint(circ, new_circ) }) {
-    // #([rest], []) -> {
-    //   [rest]
-    // }
-    #([one], rest) -> [set.union(one, new_circ), ..rest]
-    #([one, two], rest) -> [set.union(one, two) |> set.union(new_circ), ..rest]
-    #([], rest) -> [new_circ, ..rest]
-    _ -> panic
+pub fn track_state_change(
+  pairs: List(#(#(Coord, Coord), Float)),
+  connections: List(Set(Coord)),
+  last_change_coords: #(Coord, Coord),
+) {
+  case pairs {
+    [pair, ..rest] -> {
+      let #(#(p, q), _d) = pair
+      let new = merge_circuits(p, q, connections)
+      case new == connections {
+        True -> track_state_change(rest, new, last_change_coords)
+        False -> track_state_change(rest, new, #(p, q))
+      }
+    }
+    [] -> last_change_coords
   }
 }
 
 pub fn pt_2(coords: List(Coord)) {
-  let pairs =
+  let #(p, q) =
     coords
     |> list.combination_pairs
     |> list.map(fn(p_q) {
@@ -104,20 +100,6 @@ pub fn pt_2(coords: List(Coord)) {
       let #(_coords2, d2) = coord_pair2
       float.compare(d1, d2)
     })
-  // |> list.take(1000)
-
-  list.fold(pairs, [], fn(acc, coord_pair) {
-    let #(#(p, q), _d) = coord_pair
-    let new = merge_circuits_2(p, q, acc)
-    case new == acc {
-      False -> echo coord_pair
-      True -> echo #(#(Coord(0.0, 0.0, 0.0), Coord(0.0, 0.0, 0.0)), 0.0)
-    }
-    new
-  })
-  |> list.map(set.size)
-  |> list.sort(int.compare)
-  |> list.reverse
-  |> list.take(3)
-  |> list.fold(1, int.multiply)
+    |> track_state_change([], #(Coord(0.0, 0.0, 0.0), Coord(0.0, 0.0, 0.0)))
+  p.x *. q.x
 }
